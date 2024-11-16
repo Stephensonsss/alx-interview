@@ -1,43 +1,44 @@
-#!/usr/bin/python3
+!/usr/bin/python3
+"""
+Log parsing
+"""
 import sys
-import re
 
-def print_stats(total_size, status_codes):
-    """Prints the accumulated metrics."""
-    print("File size: {}".format(total_size))
-    for code in sorted(status_codes.keys()):
+
+def print_metrics(file_size, status_codes):
+    """
+    Print metrics
+    """
+    print("File size: {}".format(file_size))
+    codes_sorted = sorted(status_codes.keys())
+    for code in codes_sorted:
         if status_codes[code] > 0:
             print("{}: {}".format(code, status_codes[code]))
 
-def main():
-    total_size = 0
-    line_count = 0
-    status_codes = {200: 0, 301: 0, 400: 0, 401: 0, 403: 0, 404: 0, 405: 0, 500: 0}
-    
-    log_pattern = re.compile(
-        r'(?P<ip>\d+\.\d+\.\d+\.\d+) - \[(?P<date>.+)\] "GET /projects/260 HTTP/1\.1" (?P<status>\d{3}) (?P<size>\d+)'
-    )
-    
-    try:
-        for line in sys.stdin:
-            match = log_pattern.match(line)
-            if match:
-                size = int(match.group('size'))
-                status = int(match.group('status'))
-                
-                total_size += size
-                if status in status_codes:
-                    status_codes[status] += 1
-                
-                line_count += 1
-                if line_count % 10 == 0:
-                    print_stats(total_size, status_codes)
-    except KeyboardInterrupt:
-        print_stats(total_size, status_codes)
-        sys.exit(0)
 
-    print_stats(total_size, status_codes)
+codes_count = {'200': 0, '301': 0, '400': 0, '401': 0,
+               '403': 0, '404': 0, '405': 0, '500': 0}
+file_size_total = 0
+count = 0
 
 if __name__ == "__main__":
-    main()
-
+    try:
+        for line in sys.stdin:
+            try:
+                status_code = line.split()[-2]
+                if status_code in codes_count.keys():
+                    codes_count[status_code] += 1
+                # Grab file size
+                file_size = int(line.split()[-1])
+                file_size_total += file_size
+            except Exception:
+                pass
+            # print metrics if 10 lines have been read
+            count += 1
+            if count == 10:
+                print_metrics(file_size_total, codes_count)
+                count = 0
+    except KeyboardInterrupt:
+        print_metrics(file_size_total, codes_count)
+        raise
+   print_metrics(file_size_total, codes_count)
