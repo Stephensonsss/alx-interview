@@ -1,42 +1,25 @@
 #!/usr/bin/node
-
 const request = require('request');
-
-if (process.argv.length !== 3) {
-  console.error('Usage: ./0-starwars_characters.js <Movie ID>');
-  process.exit(1);
-}
-
 const movieId = process.argv[2];
-const url = `https://swapi-api.hbtn.io/api/films/${movieId}/`;
+const options = {
+  url: 'https://swapi-api.hbtn.io/api/films/' + movieId,
+  method: 'GET'
+};
 
-request(url, (error, response, body) => {
-  if (error) {
-    console.error('Error:', error);
-    return;
+request(options, function (error, response, body) {
+  if (!error) {
+    const characters = JSON.parse(body).characters;
+    printCharacters(characters, 0);
   }
-  if (response.statusCode !== 200) {
-    console.error('Error:', response.statusCode);
-    return;
-  }
-
-  const film = JSON.parse(body);
-  const characters = film.characters;
-
-  characters.forEach((characterUrl) => {
-    request(characterUrl, (error, response, body) => {
-      if (error) {
-        console.error('Error:', error);
-        return;
-      }
-      if (response.statusCode !== 200) {
-        console.error('Error:', response.statusCode);
-        return;
-      }
-
-      const character = JSON.parse(body);
-      console.log(character.name);
-    });
-  });
 });
 
+function printCharacters (characters, index) {
+  request(characters[index], function (error, response, body) {
+    if (!error) {
+      console.log(JSON.parse(body).name);
+      if (index + 1 < characters.length) {
+        printCharacters(characters, index + 1);
+      }
+    }
+  });
+}
